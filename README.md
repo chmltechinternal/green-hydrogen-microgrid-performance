@@ -1,19 +1,18 @@
-# 🎈 Blank app template
+# Microgrid Energy Analysis Dashboard
 
-A simple Streamlit app template for you to modify!
+An interactive Streamlit dashboard analyzing microgrid system performance, including:
+- Energy balance visualization
+- Hydrogen system performance metrics
+- System efficiency analysis
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
+Data Description
+The dashboard analyzes hourly data from a microgrid system including:
 
-### How to run it on your own machine
+  • PV Production
+  • Load Demand
+  • Hydrogen Production/Usage
+  • System Efficiencies
 
-1. Install the requirements
+Live Demo
 
-   ```
-   $ pip install -r requirements.txt
-   ```
-
-2. Run the app
-
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+View the dahsboard here: https://chmlmonthlyenergy-wnfx4ghjeonnxojf8on7m3.streamlit.app/ 
