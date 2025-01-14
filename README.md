@@ -15,4 +15,4 @@ The dashboard analyzes hourly data from a microgrid system including:
 
 Live Demo
 
-View the dahsboard here: https://chmlmonthlyenergy-wnfx4ghjeonnxojf8on7m3.streamlit.app/ 
+View the dashboard here: https://green-hydrogen-microgrid-performance.streamlit.app/ 
