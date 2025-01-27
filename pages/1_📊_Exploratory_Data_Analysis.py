@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import filters
 
 # Page setup
-st.set_page_config(page_title="EDA Analysis", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Exploratory Data Analysis", page_icon="📊", layout="wide")
 
 st.title('Exploratory Data Analysis')
 
