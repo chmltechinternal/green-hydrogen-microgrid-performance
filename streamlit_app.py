@@ -210,7 +210,7 @@ Welcome to the Green Hydrogen Microgrid Performance dashboard. This application 
 Use the navigation menu on the left to explore different aspects of the analysis:
 """)
 
-st.page_link("pages/1_📊_EDA.py", label="EDA", icon="📊")
+st.page_link("pages/1_📊_EDA.py", label="Exploratory Data Analysis", icon="📊")
 st.page_link("pages/2_📈_Hydrogen_Production_Prediction.py", label="Hydrogen Production Prediction", icon="📈")
 
 st.write("""
