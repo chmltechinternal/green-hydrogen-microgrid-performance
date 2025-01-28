@@ -12,6 +12,9 @@ Use the navigation menu on the left to explore different aspects of the analysis
 
 st.page_link("pages/1_📊_Exploratory_Data_Analysis.py", label="Exploratory Data Analysis", icon="📊")
 st.page_link("pages/2_📈_Hydrogen_Production_Prediction.py", label="Hydrogen Production Prediction", icon="📈")
+st.page_link("pages/3_📈_Electrolyzer_Losses_Prediction.py", label="Electrolyzer Losses Prediction", icon="📈")
+
+
 
 st.write("""
 ## About the Project
