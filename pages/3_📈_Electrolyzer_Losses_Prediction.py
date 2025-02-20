@@ -6,6 +6,8 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from prophet import Prophet
 import plotly.graph_objects as go
 import math
+import xgboost as xgb
+# from xgboost import XGBRegressor
 import filters
 
 st.set_page_config(page_title="Electrolyzer Losses Prediction", layout="wide")
@@ -49,7 +51,7 @@ daily_avg = calculate_daily_averages(
     df[['DateTime', 'Electrolyzer Losses (kWh)', 'E_PV2EZ (kWh)', 'Hydrogen Production (kg)']])
 
 # Display the daily averages
-st.dataframe(daily_avg.head())
+# st.dataframe(daily_avg.head())
 
 st.divider()
 
@@ -113,12 +115,15 @@ def display_metrics(model_name, model_metrics, best_metrics):
     metrics = model_metrics[model_name]
     num_metrics = len(metrics)
 
-    cols = st.columns(num_metrics, gap='large')
+    num_columns = (num_metrics + 1) // 2
+    # num_columns = 4
+    cols = st.columns(num_columns, gap='large', border=True)
 
     for i, (metric_name, value) in enumerate(metrics.items()):
         best_value = best_metrics[metric_name]['value']
         color = "#90EE90" if np.isclose(value, best_value) else "#f0f0f0"
-        col_index = i % num_metrics
+        # col_index = i % num_columns
+        col_index = i // 2
 
         with cols[col_index]:
             st.markdown(
@@ -234,6 +239,11 @@ reg = GradientBoostingRegressor(**params)
 model_metrics['Gradient Boosting'], gb_y_train_pred, gb_y_test_pred = train_and_evaluate(
     reg, X_train, y_train, X_test, y_test)
 
+############ XGBOOST ######################################
+xgb_model = xgb.XGBRegressor(objective='reg:squarederror', alpha=0, colsample_bytree=0.3,
+                             learning_rate=0.01, max_depth=3, n_estimators=100, subsample=0.8)
+model_metrics['XGBoost'], xgb_y_train_pred, xgb_y_test_pred = train_and_evaluate(
+    xgb_model, X_train, y_train, X_test, y_test)
 ############ PROPHET ######################################
 model = Prophet()
 # model.fit(train_data[['ds','y']])
@@ -258,23 +268,72 @@ model_metrics['Prophet'] = {
     "R2_test": r2_score(test_data["y"], forecast.loc[7000:, "yhat"]),
 }
 
+st.subheader("Predict Electrolyzer Losses")
+
+col_pred1, col_pred2 = st.columns(2, gap='large', vertical_alignment='center')
+
+with col_pred1:
+    model_options = ["Random Forest",
+                     "Gradient Boosting", "XGBoost", "Prophet"]
+    selected_model = st.selectbox("Select Model", model_options)
+
+    e_pv2ez = st.number_input("E_PV2EZ (kWh)", min_value=0.0,
+                              max_value=1000.0, value=100.0)
+    hydrogen_production = st.number_input(
+        "Hydrogen Production (kg)", min_value=0.0, max_value=100.0, value=10.0)
+
+    user_input = pd.DataFrame([[e_pv2ez, hydrogen_production]], columns=[
+        'E_PV2EZ', 'Hydrogen'])
+
+if st.button("Predict Electrolyzer Losses"):
+    if selected_model == "Random Forest":
+        prediction = regr.predict(user_input)[0]
+    elif selected_model == "Gradient Boosting":
+        prediction = reg.predict(user_input)[0]
+    elif selected_model == "XGBoost":
+        prediction = xgb_model.predict(user_input)[0]
+    elif selected_model == "Prophet":
+        prophet_input = pd.DataFrame({'ds': [pd.Timestamp.now()], 'E_PV2EZ': [
+                                     e_pv2ez], 'Hydrogen': [hydrogen_production]})
+        prediction = model.predict(prophet_input)['yhat'].values[0]
+
+    with col_pred2:
+        st.markdown(
+            f"""
+                <div style="background-color: thistle; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; text-align: center">
+                    <strong>{selected_model} Prediction: </strong> 
+                    {prediction:.2f} kWh
+                </div>
+                """,
+            unsafe_allow_html=True
+        )
+st.divider()
+
 best_metrics = evaluate_best_metrics(model_metrics)
 
-st.write('#### Random Forest Model Training')
+st.write('### Model Comparison')
+st.write('#### Random Forest Model')
 display_metrics('Random Forest', model_metrics, best_metrics)
 plot_predict_v_actual('Random Forest', train_data, test_data,
                       y_train, rf_y_train_pred, rf_y_test_pred)
 
 st.divider()
 
-st.write('#### Gradient Boosting Model Training')
+st.write('#### Gradient Boosting Model')
 display_metrics('Gradient Boosting', model_metrics, best_metrics)
 plot_predict_v_actual('Gradient Boosting', train_data,
                       test_data, y_train, gb_y_train_pred, gb_y_test_pred)
 
 st.divider()
 
-st.write('#### Prophet Model Training')
+st.write('#### XGBoost Model')
+display_metrics('XGBoost', model_metrics, best_metrics)
+plot_predict_v_actual('XGBoost', train_data,
+                      test_data, y_train, gb_y_train_pred, gb_y_test_pred)
+
+st.divider()
+
+st.write('#### Prophet Model')
 display_metrics('Prophet', model_metrics, best_metrics)
 
 prophet_fig = go.Figure()
