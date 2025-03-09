@@ -24,7 +24,8 @@ df = filters.load_data()
 # Dataset overview
 st.header("Dataset Overview")
 st.write("Here's a glimpse of the data we're working with:")
-st.dataframe(df[['DateTime', 'Month', 'Hour', 'Solar Irradiance (W/m^2)', 'Ambient Temperature (°C)', 'Hydrogen Production (kg)']].head())
+st.dataframe(df[['DateTime', 'Month', 'Hour', 'Solar Irradiance (W/m^2)',
+             'Ambient Temperature (°C)', 'Hydrogen Production (kg)']].head())
 
 feature_col = ['Solar Irradiance (W/m^2)', 'Ambient Temperature (°C)']
 output = ['Hydrogen Production (kg)']
@@ -35,11 +36,15 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.header("Model Selection")
-    model_type = st.selectbox("Choose a prediction model:", ["Random Forest", "Gradient Boosting", "Prophet"])
+    model_type = st.selectbox("Choose a prediction model:", [
+                              "Random Forest", "Gradient Boosting", "Prophet"])
 ''
 ''
+
+
 def get_list_nnan(column_name):
-    list_y_nan = list(df[column_name][df[column_name].apply(lambda x: math.isnan(x))].index)
+    list_y_nan = list(
+        df[column_name][df[column_name].apply(lambda x: math.isnan(x))].index)
     list_x_nan = []
     for i in feature_col:
         list_x_nan += list(df[i][df[i].apply(lambda x: math.isnan(x))].index)
@@ -47,6 +52,7 @@ def get_list_nnan(column_name):
     list_nan = list(set(list_x_nan + list_y_nan))
     list_notnan = [i for i in list(df.index) if i not in list_nan]
     return list_notnan
+
 
 list_notnan = get_list_nnan('Hydrogen Production (kg)')
 X = df[feature_col].loc[list_notnan]
@@ -57,25 +63,30 @@ st.divider()
 
 if model_type in ["Random Forest", "Gradient Boosting"]:
     st.header(f"{model_type} Model Training and Prediction")
-    colA, colB = st.columns([2,4], gap="large", vertical_alignment="center")
+    colA, colB = st.columns([2, 4], gap="large", vertical_alignment="center")
 
     with colA:
         st.subheader("Train Model")
         st.write("Select the number of estimators and max depth to train the model and view different metrics to help determine the suitability of the model for hydrogen production prediction")
-        n_estimators = st.slider("Number of Estimators", 10, 200, 50, help="The number of trees in the forest.")
-        max_depth = st.slider("Max Depth", 5, 20, 10, help="The maximum depth of the tree.")
+        n_estimators = st.slider(
+            "Number of Estimators", 10, 200, 50, help="The number of trees in the forest.")
+        max_depth = st.slider("Max Depth", 5, 20, 10,
+                              help="The maximum depth of the tree.")
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42)
+
         if model_type == "Random Forest":
-            regr = RandomForestRegressor(n_estimators=n_estimators, max_depth=max_depth, random_state=42)
-        else:  
-            regr = GradientBoostingRegressor(n_estimators=n_estimators, max_depth=max_depth, random_state=42)
-        
+            regr = RandomForestRegressor(
+                n_estimators=n_estimators, max_depth=max_depth, random_state=42)
+        else:
+            regr = GradientBoostingRegressor(
+                n_estimators=n_estimators, max_depth=max_depth, random_state=42)
+
         regr.fit(X_train, y_train)
         y_pred_train = regr.predict(X_train)
         y_pred_test = regr.predict(X_test)
-    
+
     with colB:
         mse_train = mean_squared_error(y_train, y_pred_train)
         mse_test = mean_squared_error(y_test, y_pred_test)
@@ -88,11 +99,13 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
 
         col1, col2, col3, col4 = st.columns(4, border=True)
         col5, col6, col7, col8 = st.columns(4, border=True)
-        
+
         def create_metric_card(container, title, value):
             with container:
-                st.markdown(f"<div><h6 style='text-align: center;'>{title}</h6></div>", unsafe_allow_html=True)
-                st.markdown(f"<h6 style='text-align: center;'>{value:.2f}</h6>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div><h6 style='text-align: center;'>{title}</h6></div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<h6 style='text-align: center;'>{value:.2f}</h6>", unsafe_allow_html=True)
 
         # Create cards for each metric
         create_metric_card(col1, "MSE (Train)", mse_train)
@@ -110,11 +123,15 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
         ''
         ''
         st.subheader("Predict Hydrogen Production")
-        st.write("Enter new values for solar irradiance and ambient temperature to predict hydrogen production:")
-        solar_irradiance = st.number_input("Solar Irradiance (W/m^2)", value=500, step=10)
-        ambient_temperature = st.number_input("Ambient Temperature (°C)", value=25, step=1)
+        st.write(
+            "Enter new values for solar irradiance and ambient temperature to predict hydrogen production:")
+        solar_irradiance = st.number_input(
+            "Solar Irradiance (W/m^2)", value=500, step=10)
+        ambient_temperature = st.number_input(
+            "Ambient Temperature (°C)", value=25, step=1)
 
-        new_data = pd.DataFrame([[solar_irradiance, ambient_temperature]], columns=feature_col)
+        new_data = pd.DataFrame(
+            [[solar_irradiance, ambient_temperature]], columns=feature_col)
         prediction = regr.predict(new_data)[0]
 
     with col10:
@@ -155,10 +172,12 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
 elif model_type == "Prophet":
     st.header(f"{model_type} Model Training and Prediction")
     with st.spinner('Training Prophet model... This may take a moment.'):
-        prophet_data = df.rename(columns={'DateTime': 'ds', 'Hydrogen Production (kg)': 'y'})
+        prophet_data = df.rename(
+            columns={'DateTime': 'ds', 'Hydrogen Production (kg)': 'y'})
         prophet_data = prophet_data.dropna(subset=['ds', 'y'] + feature_col)
 
-        train_data, test_data = train_test_split(prophet_data, test_size=0.1, random_state=13)
+        train_data, test_data = train_test_split(
+            prophet_data, test_size=0.1, random_state=13)
 
         model = Prophet()
         for feature in feature_col:
@@ -174,18 +193,25 @@ elif model_type == "Prophet":
         # mse = mean_squared_error(y_true, y_pred)
         # st.write(f"Mean Squared Error: {mse}")
 
-        df_cv = cross_validation(model, horizon='31 days', period='16 days', initial='300 days')
+        df_cv = cross_validation(
+            model, horizon='31 days', period='16 days', initial='300 days')
         df_p = performance_metrics(df_cv)
-        df_p['horizon_days'] = df_p['horizon'].dt.total_seconds() / (24 * 60 * 60)
+        df_p['horizon_days'] = df_p['horizon'].dt.total_seconds() / \
+            (24 * 60 * 60)
 
     st.success('Model training complete!')
     st.write("This chart visualizes various error metrics (RMSE, MAE, MAPE, MDAPE, and SMAPE) against the forecast horizon in days. It's crucial for assessing the model's predictive accuracy over time and understanding how the forecast quality degrades as we predict further into the future. ")
     fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=df_p['horizon_days'], y=df_p['rmse'], mode='lines+markers', name='RMSE'))
-    fig1.add_trace(go.Scatter(x=df_p['horizon_days'], y=df_p['mae'], mode='lines+markers', name='MAE'))
-    fig1.add_trace(go.Scatter(x=df_p['horizon_days'], y=df_p['mape'], mode='lines+markers', name='MAPE'))
-    fig1.add_trace(go.Scatter(x=df_p['horizon_days'], y=df_p['mdape'], mode='lines+markers', name='MDAPE'))
-    fig1.add_trace(go.Scatter(x=df_p['horizon_days'], y=df_p['smape'], mode='lines+markers', name='SMAPE'))
+    fig1.add_trace(go.Scatter(
+        x=df_p['horizon_days'], y=df_p['rmse'], mode='lines+markers', name='RMSE'))
+    fig1.add_trace(go.Scatter(
+        x=df_p['horizon_days'], y=df_p['mae'], mode='lines+markers', name='MAE'))
+    fig1.add_trace(go.Scatter(
+        x=df_p['horizon_days'], y=df_p['mape'], mode='lines+markers', name='MAPE'))
+    fig1.add_trace(go.Scatter(
+        x=df_p['horizon_days'], y=df_p['mdape'], mode='lines+markers', name='MDAPE'))
+    fig1.add_trace(go.Scatter(
+        x=df_p['horizon_days'], y=df_p['smape'], mode='lines+markers', name='SMAPE'))
 
     fig1.update_layout(
         title='RMSE, MAE, MAPE, MDAPE and SMAPE vs Forecast Horizon',
@@ -199,8 +225,10 @@ elif model_type == "Prophet":
 
     with colC:
         st.subheader("Enter New Data for Prediction")
-        solar_irradiance = st.number_input("Solar Irradiance (W/m^2)", value=500)
-        ambient_temperature = st.number_input("Ambient Temperature (°C)", value=25)
+        solar_irradiance = st.number_input(
+            "Solar Irradiance (W/m^2)", value=500)
+        ambient_temperature = st.number_input(
+            "Ambient Temperature (°C)", value=25)
         prediction_date = st.date_input("Prediction Date")
 
         new_data = pd.DataFrame({
@@ -213,14 +241,18 @@ elif model_type == "Prophet":
         # Make prediction
         prediction = model.predict(new_data)
         # st.write(f"###### Predicted Hydrogen Production: *_{prediction['yhat'].values[0]:.4f} kg_*")
-        st.success(f"Predicted Hydrogen Production: {prediction['yhat'].values[0]:.2f} kg")
+        st.success(
+            f"Predicted Hydrogen Production: {prediction['yhat'].values[0]:.2f} kg")
 
     # Plot the forecast
     # st.subheader("Forecast Plot")
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=test_data['ds'], y=test_data['y'], mode='markers', name='Actual'))
-    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], mode='lines', name='Forecast'))
-    fig.update_layout(title='Hydrogen Production Forecast', xaxis_title='Date', yaxis_title='Hydrogen Production (kg)')
+    fig.add_trace(go.Scatter(
+        x=test_data['ds'], y=test_data['y'], mode='markers', name='Actual'))
+    fig.add_trace(go.Scatter(
+        x=forecast['ds'], y=forecast['yhat'], mode='lines', name='Forecast'))
+    fig.update_layout(title='Hydrogen Production Forecast',
+                      xaxis_title='Date', yaxis_title='Hydrogen Production (kg)')
     st.plotly_chart(fig)
 
     st.subheader("Forecasted vs Actual")
@@ -253,8 +285,6 @@ elif model_type == "Prophet":
     )
     st.plotly_chart(fig_forecast_actual, use_container_width=True)
 
-
-
 ''
 ''
 st.divider()
@@ -282,7 +312,7 @@ for i, df in enumerate(filtered_dataframes):
             autosize=True,
             margin=dict(l=40, r=20, t=60, b=40),
             title={'text': f'Hydrogen Production for {st.session_state.selected_month} (Hours: {st.session_state.hour_range[0]}-{st.session_state.hour_range[1]})', 'x': 0.5,
-            'xanchor': 'center', 'font': dict(color='#0f2113')},
+                   'xanchor': 'center', 'font': dict(color='#0f2113')},
             xaxis_title='Date',
             yaxis_title='Hydrogen Production (kg)',
             plot_bgcolor='#ffffff',
@@ -312,8 +342,10 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
     This can help identify which factors are most crucial for hydrogen production in your system.
     """)
     importance = regr.feature_importances_
-    feature_importance = pd.DataFrame({'feature': feature_col, 'importance': importance})
-    feature_importance = feature_importance.sort_values('importance', ascending=False)
+    feature_importance = pd.DataFrame(
+        {'feature': feature_col, 'importance': importance})
+    feature_importance = feature_importance.sort_values(
+        'importance', ascending=False)
 
     fig_importance = go.Figure(go.Bar(
         x=feature_importance['importance'],

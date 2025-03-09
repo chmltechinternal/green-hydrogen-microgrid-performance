@@ -20,7 +20,7 @@ st.page_link("pages/3_📈_Electrolyzer_Losses_Prediction.py",
 st.page_link("pages/4_📈_PV_Production_Prediction.py",
              label="PV Production Prediction", icon="📈")
 st.page_link("pages/5_📈_System_Efficiencies_Prediction.py",
-             label="System Efficiencies Prediction", icon="📈")
+             label="Fuel Cell Efficiencies Prediction", icon="📈")
 
 st.write("""
 ## About the Project

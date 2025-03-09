@@ -11,326 +11,381 @@ import plotly.express as px
 import math
 import filters
 
-st.set_page_config(page_title="System Efficiencies Prediction", layout="wide")
+st.set_page_config(
+    page_title="Fuel Cell Efficiencies Prediction", layout="wide")
 
-st.title("System Efficiencies Prediction")
-# st.write("""
-# The Random Forest model is used here to predict PV Production for a microgrid system using the features - 'Solar Irradiance (W/m^2)', 'Electrolyser Power (kW)', 'Ambient Temperature (°C)', 'Electrolyzer Losses (kWh)', and 'Hour'.
-# The following metrics measure the performance of the model - Mean Absolute Error, Mean Square Error, Mean Absolute Percentage Error and R² Score.
-# Modelling was done on the full dataset provided as well as daily averages of the data.
-# """)
+st.title("Fuel Cell Efficiencies Prediction")
+st.write("""
+This dashboard provides insights into the prediction of Fuel Cell Electrical Efficiency (%) using machine learning models. Fuel cell efficiency is a crucial factor in optimizing hydrogen consumption and improving energy performance.
 
-# df = filters.load_data()
-# df['DayOfYear'] = df['DateTime'].dt.dayofyear
-# # st.divider()
-# tab_titles = ['Full Dataset', 'Daily Averages']
-# tabs = st.tabs(tab_titles)
+Explore the visualizations to gain insights into performance metrics like Mean Squared Error (MSE), Mean Absolute Error (MAE), and R-squared (R²) to understand model accuracy and reliability.
+""")
 
-# with tabs[0]:
-#     st.header("Prediction with Full Dataset")
-#     st.subheader("Dataset Overview")
-#     st.write("Here's a glimpse of the data we're working with:")
-#     st.dataframe(df[['DateTime', 'Month', 'Hour', 'Solar Irradiance (W/m^2)',
-#                     'Electrolyser Power (kW)', 'PV Production (kWh)',
-#                      'Ambient Temperature (°C)',
-#                      'Electrolyzer Losses (kWh)']].head())
 
-#     def calculate_daily_averages(df):
-#         df = df.set_index('DateTime')
-#         daily_averages = df.resample('D').mean()
-#         daily_averages = daily_averages.reset_index()
+df = filters.load_data()
+feature_col = ['Hydrogen Flow from Tank to FC (kg)']
+output = ['Fuel Cell Electrical Efficiency (%)']
 
-#         return daily_averages
+df['Hydrogen Consumption Rate (kg/kWh)'].unique()
 
-#     daily_avg = calculate_daily_averages(
-#         df[['DateTime', 'Solar Irradiance (W/m^2)',
-#             'Electrolyser Power (kW)', 'PV Production (kWh)',
-#             'Ambient Temperature (°C)',
-#             'Electrolyzer Losses (kWh)']])
-#     daily_avg['DayOfYear'] = daily_avg['DateTime'].dt.dayofyear
-#     daily_avg['Month'] = daily_avg['DateTime'].dt.month
 
-#     features = [
-#         'Solar Irradiance (W/m^2)',
-#         'Electrolyser Power (kW)',
-#         'Ambient Temperature (°C)',
-#         'Electrolyzer Losses (kWh)',
-#         'Hour'
-#     ]
-#     output = ['PV Production (kWh)']
+def get_list_nnan(column_name):
+    list_y_nan = list(
+        df[column_name][df[column_name].apply(lambda x: math.isnan(x))].index)
+    list_x_nan = []
+    for i in feature_col:
+        list_x_nan += list(df[i][df[i].apply(lambda x: math.isnan(x))].index)
+    list_x_nan = list(set(list_x_nan))
+    list_nan = list(set(list_x_nan+list_y_nan))
+    list_notnan = [i for i in list(df.index) if i not in list_nan]
+    return list_notnan
 
-#     # Calculate daily averages
 
-#     X_full = df[features]
-#     y_full = df['PV Production (kWh)']
+# list_notnan = get_list_nnan('Electrolyzer Losses (kWh)')
+# X = df[feature_col].loc[list_notnan]
+# y = df['Electrolyzer Losses (kWh)'].loc[list_notnan]
 
-#     X_full_train, X_full_test, y_full_train, y_full_test = train_test_split(
-#         X_full, y_full, test_size=0.2, random_state=42)
+# X_train, X_test, y_train, y_test = train_test_split(
+#     X, y, test_size=0.1, random_state=13
+# )
+# params = {
+#     "n_estimators": 10,
+#     "max_depth": 10,
+#     "min_samples_split": 10,
+#     "learning_rate": 0.01,
+#     "loss": "squared_error",
+# }
 
-#     # Scale the features
-#     scaler = StandardScaler()
-#     X_full_train_scaled = scaler.fit_transform(X_full_train)
-#     X_full_test_scaled = scaler.transform(X_full_test)
+# reg = GradientBoostingRegressor(**params)
+# reg.fit(X_train, y_train)
 
-#     # Parameter tuning for Random Forest
-#     param_grid = {
-#         'n_estimators': [100, 200, 300],
-#         'max_depth': [10, 15, 20, None],
-#         'min_samples_split': [2, 5, 10],
-#         'min_samples_leaf': [1, 2, 4]
-#     }
+# mset = mean_squared_error(y_train, reg.predict(X_train))
+# print("The mean squared error (MSE) on train set: {:.4f}".format(mset))
+# mse = mean_squared_error(y_test, reg.predict(X_test))
+# print("The mean squared error (MSE) on test set: {:.4f}".format(mse))
 
-#     ''
-#     ''
-#     st.write("#### Parameter Selection")
-#     rf = RandomForestRegressor(random_state=42)
-#     # grid_search = GridSearchCV(
-#     #     estimator=rf,
-#     #     param_grid=param_grid,
-#     #     cv=5,
-#     #     n_jobs=-1,
-#     #     scoring='r2',
-#     #     verbose=1
-#     # )
+# maet = mean_absolute_error(y_train, reg.predict(X_train))
+# print("The mean absolute error (MAE) on train set: {:.4f}".format(maet))
+# mae = mean_absolute_error(y_test, reg.predict(X_test))
+# print("The mean absolute error (MAE) on test set: {:.4f}".format(mae))
 
-#     # grid_search.fit(X_train_scaled, y_train)
-#     full_best_params = {
-#         'n_estimators': 200,
-#         'max_depth': 10,
-#         'min_samples_split': 10,
-#         'min_samples_leaf': 4
-#     }
-#     st.write('After parameter tuning with GridSearchCV, the following were defined as the best parameters for the Random Forest model:')
-#     for parameter, value in full_best_params.items():
-#         st.markdown(f"**{parameter}:** {value}")
+# r2t = r2_score(y_train, reg.predict(X_train))
+# print("The R2 score on train set: {:.4f}".format(r2t))
+# r2 = r2_score(y_test, reg.predict(X_test))
+# print("The R2 score on test set: {:.4f}".format(r2))
 
-#     rf_final = RandomForestRegressor(
-#         **full_best_params,
-#         random_state=42
-#     )
-#     rf_final.fit(X_full_train_scaled, y_full_train)
-#     # Predictions
-#     y_full_pred_rf = rf_final.predict(X_full_test_scaled)
+# regr = RandomForestRegressor(n_estimators=10, max_depth=10, random_state=13)
+# regr.fit(X_train, y_train)
 
-#     def mean_absolute_percentage_error(y_true, y_pred):
-#         return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
-#     errors_full_rf = y_full_test - y_full_pred_rf
-#     ''
-#     ''
-#     st.write("#### Model Metrics")
-#     metrics = {
-#         "MSE": mean_squared_error(y_full_test, y_full_pred_rf),
-#         "RMSE": np.sqrt(mean_squared_error(y_full_test, y_full_pred_rf)),
-#         "MAE": mean_absolute_error(y_full_test, y_full_pred_rf),
-#         "MAPE": mean_absolute_percentage_error(y_full_test, y_full_pred_rf),
-#         "R² Score": r2_score(y_full_test, y_full_pred_rf),
-#     }
-#     num_metrics = len(metrics)
+# mset = mean_squared_error(y_train, regr.predict(X_train))
+# print("The mean squared error (MSE) on train set: {:.4f}".format(mset))
+# mse = mean_squared_error(y_test, regr.predict(X_test))
+# print("The mean squared error (MSE) on test set: {:.4f}".format(mse))
 
-#     # num_columns = (num_metrics + 1) // 2
-#     num_columns = 5
-#     cols = st.columns(num_columns, gap='large')
 
-#     for i, (metric_name, value) in enumerate(metrics.items()):
-#         # best_value = best_metrics[metric_name]['value']
-#         color = "#90EE90"
-#         # color = "#90EE90" if np.isclose(value, best_value) else "#f0f0f0"
-#         col_index = i % num_columns
-#         # col_index = i // 2
+# maet = mean_absolute_error(y_train, regr.predict(X_train))
+# print("The mean absolute error (MAE) on train set: {:.4f}".format(maet))
+# mae = mean_absolute_error(y_test, regr.predict(X_test))
+# print("The mean absolute error (MAE) on test set: {:.4f}".format(mae))
 
-#         with cols[col_index]:
-#             st.markdown(
-#                 f"""
-#                 <div style="background-color: {color}; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; text-align: center">
-#                     <strong>{metric_name}</strong>
-#                     <p style="padding: 0; margin: 0">{value:.4f}</p>
-#                 </div>
-#                 """,
-#                 unsafe_allow_html=True
-#             )
+# r2t = r2_score(y_train, regr.predict(X_train))
+# print("The R2 score on train set: {:.4f}".format(r2t))
+# r2 = r2_score(y_test, regr.predict(X_test))
+# print("The R2 score on test set: {:.4f}".format(r2))
 
-#     def plot_feature_importance(features, importances):
-#         importance_df = pd.DataFrame({
-#             'feature': features,
-#             'importance': importances
-#         }).sort_values('importance', ascending=True)
+df['DateTime'] = pd.to_datetime(df['DateTime'])
+data = df[['DateTime']+feature_col+output]
+data.columns = ['ds', 'HyFlow', 'y']
+train_data = data.iloc[:7000]
+test_data = data.iloc[7000:]
+X_train, X_test = train_data[['HyFlow']], test_data[['HyFlow']]
+y_train, y_test = train_data['y'], test_data['y']
 
-#         fig = px.bar(importance_df, x='importance', y='feature', orientation='h',
-#                      title='Random Forest Feature Importance',
-#                      labels={'importance': 'Importance Score',
-#                              'feature': 'Features'},
-#                      color='importance', color_continuous_scale='Greens')
+tab_titles = ["Gradient Boosting", "Random Forest", "Prophet"]
+tabs = st.tabs(tab_titles)
 
-#         fig.update_layout(height=600, width=800)
-#         st.plotly_chart(fig)
+params = {
+    "n_estimators": 10,
+    "max_depth": 10,
+    "min_samples_split": 10,
+    "learning_rate": 0.01,
+    "loss": "squared_error",
+}
 
-#     def plot_actual_vs_predicted(y_test, y_pred_rf):
-#         fig = go.Figure()
+reg = GradientBoostingRegressor(**params)
+reg.fit(X_train, y_train)
 
-#         fig.add_trace(go.Scatter(x=y_test, y=y_pred_rf, mode='markers',
-#                                  marker=dict(color='green', opacity=0.5),
-#                                  name='Predictions'))
+with tabs[0]:
+    st.write("### Gradient Boosting")
+    st.write("In this tab, we use a Gradient Boosting Regressor to predict Fuel Cell Electrical Efficiency (%) based on the hydrogen flow rate. Gradient Boosting is an ensemble technique that builds multiple weak learners (decision trees) in sequence, improving predictions by correcting the errors made by previous models. The model’s performance is evaluated using key metrics such as Mean Squared Error (MSE), Mean Absolute Error (MAE), and R² score. The plotted results display actual efficiency values alongside predicted values, giving insights into the model’s accuracy.")
 
-#         fig.add_trace(go.Scatter(x=[y_test.min(), y_test.max()],
-#                                  y=[y_test.min(), y_test.max()],
-#                                  mode='lines', line=dict(color='red', dash='dash'),
-#                                  name='Perfect Prediction'))
+    # mset = mean_squared_error(y_train, reg.predict(X_train))
+    # print("The mean squared error (MSE) on train set: {:.4f}".format(mset))
+    # mse = mean_squared_error(y_test, reg.predict(X_test))
+    # print("The mean squared error (MSE) on test set: {:.4f}".format(mse))
 
-#         fig.update_layout(title='Random Forest: Actual vs Predicted PV Production',
-#                           xaxis_title='Actual PV Production',
-#                           yaxis_title='Predicted PV Production',
-#                           height=600, width=800)
+    # maet = mean_absolute_error(y_train, reg.predict(X_train))
+    # print("The mean absolute error (MAE) on train set: {:.4f}".format(maet))
+    # mae = mean_absolute_error(y_test, reg.predict(X_test))
+    # print("The mean absolute error (MAE) on test set: {:.4f}".format(mae))
 
-#         st.plotly_chart(fig)
+    # r2t = r2_score(y_train, reg.predict(X_train))
+    # print("The R2 score on train set: {:.4f}".format(r2t))
+    # r2 = r2_score(y_test, reg.predict(X_test))
+    # print("The R2 score on test set: {:.4f}".format(r2))
 
-#     def plot_error_distribution(errors_rf, y_pred_rf):
-#         fig = go.Figure()
+    st.write("#### Model Metrics")
+    metrics = {
+        "MSE Train": mean_squared_error(y_train, reg.predict(X_train)),
+        "MSE Test": mean_squared_error(y_test, reg.predict(X_test)),
+        "MAE Train": mean_absolute_error(y_train, reg.predict(X_train)),
+        "MAE Test": mean_absolute_error(y_test, reg.predict(X_test)),
+        "R² Score Train": r2_score(y_train, reg.predict(X_train)),
+        "R² Score Test": r2_score(y_test, reg.predict(X_test)),
+    }
+    num_metrics = len(metrics)
 
-#         # Error histogram
-#         fig.add_trace(go.Histogram(x=errors_rf, nbinsx=50, name='Error Distribution',
-#                                    marker_color='lightgreen', marker_line_color='black',
-#                                    marker_line_width=1))
+    # num_columns = (num_metrics + 1) // 2
+    num_columns = 3
+    cols = st.columns(num_columns, gap='large')
 
-#         fig.add_vline(x=0, line_dash="dash", line_color="red")
+    for i, (metric_name, value) in enumerate(metrics.items()):
+        # best_value = best_metrics[metric_name]['value']
+        color = "#90EE90"
+        # color = "#90EE90" if np.isclose(value, best_value) else "#f0f0f0"
+        col_index = i % num_columns
+        # col_index = i // 2
 
-#         fig.update_layout(title='Distribution of RF Prediction Errors',
-#                           xaxis_title='Error (kWh)',
-#                           yaxis_title='Frequency',
-#                           height=400, width=600)
+        with cols[col_index]:
+            st.markdown(
+                f"""
+                <div style="background-color: {color}; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; text-align: center">
+                    <strong>{metric_name}</strong> 
+                    <p style="padding: 0; margin: 0">{value:.4f}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-#         st.plotly_chart(fig)
+    train_data['yhat_train'] = reg.predict(X_train)
+    test_data['yhat_test'] = reg.predict(X_test)
+    forecaste_data = pd.concat(
+        [train_data['yhat_train'], test_data['yhat_test']])
+    forecaste_data_ds = pd.concat([train_data['ds'], test_data['ds']])
 
-#         fig = px.scatter(x=y_pred_rf, y=errors_rf, opacity=0.5,
-#                          labels={
-#                              'x': 'Predicted PV Production (kWh)', 'y': 'Error (kWh)'},
-#                          title='RF Prediction Errors vs Predicted Values')
+    fig = px.line()
 
-#         fig.add_hline(y=0, line_dash="dash", line_color="red")
+    # Actual training data (blue)
+    fig.add_scatter(x=train_data['ds'], y=y_train, mode='lines',
+                    name='Actual (Train)', line=dict(color='blue'))
 
-#         fig.update_layout(height=400, width=600)
+    # Actual test data (green)
+    fig.add_scatter(x=test_data['ds'], y=y_test, mode='lines',
+                    name='Actual (Test)', line=dict(color='green'))
 
-#         st.plotly_chart(fig)
+    # Predicted data (red)
+    fig.add_scatter(x=forecaste_data_ds, y=forecaste_data,
+                    mode='lines', name='Predicted', line=dict(color='red'))
 
-#     importances = rf_final.feature_importances_
-#     ''
-#     ''
-#     st.subheader("Feature Importance")
-#     plot_feature_importance(features, importances)
+    fig.update_layout(
+        title='Actual vs Predicted Fuel Cell Electrical Efficiency',
+        xaxis_title='Date',
+        yaxis_title='Fuel Cell Electrical Efficiency (%)',
+        legend_title='Legend',
+        template='plotly_white'
+    )
+    ''
+    ''
+    st.plotly_chart(fig)
 
-#     st.subheader("Actual vs Predicted")
-#     plot_actual_vs_predicted(y_full_test, y_full_pred_rf)
+with tabs[1]:
+    st.write("### Random Forest")
+    st.write("This tab presents predictions made using a Random Forest Regressor, another ensemble learning method that constructs multiple decision trees to improve prediction stability and accuracy. Random Forest is effective at handling non-linear data and reducing overfitting. The model’s performance is evaluated with MSE, MAE, and R² score. The plotted graph compares the predicted efficiency against actual data, showing how well the model aligns with observed values.")
+    regr = RandomForestRegressor(
+        n_estimators=10, max_depth=10, random_state=13)
+    regr.fit(X_train, y_train)
 
-#     st.subheader("Error Analysis")
-#     plot_error_distribution(errors_full_rf, y_full_pred_rf)
+    # mset = mean_squared_error(y_train, regr.predict(X_train))
+    # print("The mean squared error (MSE) on train set: {:.4f}".format(mset))
+    # mse = mean_squared_error(y_test, regr.predict(X_test))
+    # print("The mean squared error (MSE) on test set: {:.4f}".format(mse))
 
-# with tabs[1]:
-#     st.header("Prediction with Daily Averages")
-#     st.subheader("Dataset Overview")
-#     st.write("Here's a glimpse of the daily averages of the data we're working with:")
+    # maet = mean_absolute_error(y_train, regr.predict(X_train))
+    # print("The mean absolute error (MAE) on train set: {:.4f}".format(maet))
+    # mae = mean_absolute_error(y_test, regr.predict(X_test))
+    # print("The mean absolute error (MAE) on test set: {:.4f}".format(mae))
 
-#     st.dataframe(daily_avg.head())
+    # r2t = r2_score(y_train, regr.predict(X_train))
+    # print("The R2 score on train set: {:.4f}".format(r2t))
+    # r2 = r2_score(y_test, regr.predict(X_test))
+    # print("The R2 score on test set: {:.4f}".format(r2))
 
-#     daily_features = [
-#         'Solar Irradiance (W/m^2)',
-#         'Electrolyser Power (kW)',
-#         'Ambient Temperature (°C)',
-#         'Electrolyzer Losses (kWh)',
-#         'DayOfYear',
-#         'Month'
-#     ]
+    st.write("#### Model Metrics")
+    metrics = {
+        "MSE Train": mean_squared_error(y_train, regr.predict(X_train)),
+        "MSE Test": mean_squared_error(y_test, regr.predict(X_test)),
+        "MAE Train": mean_absolute_error(y_train, regr.predict(X_train)),
+        "MAE Test": mean_absolute_error(y_test, regr.predict(X_test)),
+        "R² Score Train": r2_score(y_train, regr.predict(X_train)),
+        "R² Score Test": r2_score(y_test, regr.predict(X_test)),
+    }
+    num_metrics = len(metrics)
 
-#     X_daily = daily_avg[daily_features]
-#     y_daily = daily_avg['PV Production (kWh)']
+    # num_columns = (num_metrics + 1) // 2
+    num_columns = 3
+    cols = st.columns(num_columns, gap='large')
 
-#     # Split data
-#     X_daily_train, X_daily_test, y_daily_train, y_daily_test = train_test_split(
-#         X_daily, y_daily, test_size=0.2, random_state=42)
+    for i, (metric_name, value) in enumerate(metrics.items()):
+        # best_value = best_metrics[metric_name]['value']
+        color = "#90EE90"
+        # color = "#90EE90" if np.isclose(value, best_value) else "#f0f0f0"
+        col_index = i % num_columns
+        # col_index = i // 2
 
-#     # Scale features
-#     scaler = StandardScaler()
-#     X_daily_train_scaled = scaler.fit_transform(X_daily_train)
-#     X_daily_test_scaled = scaler.transform(X_daily_test)
+        with cols[col_index]:
+            st.markdown(
+                f"""
+                <div style="background-color: {color}; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; text-align: center">
+                    <strong>{metric_name}</strong> 
+                    <p style="padding: 0; margin: 0">{value:.4f}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-#     # # Parameter grid for random search
-#     # param_distributions = {
-#     #     'n_estimators': [100, 200, 300],
-#     #     'max_depth': [10, 15, 20, None],
-#     #     'min_samples_split': [2, 5, 10],
-#     #     'min_samples_leaf': [1, 2, 4]
-#     # }
+    train_data['yhat_train'] = regr.predict(X_train)
+    test_data['yhat_test'] = regr.predict(X_test)
 
-#     # # Random search CV
-#     # random_search = RandomizedSearchCV(
-#     #     estimator=RandomForestRegressor(random_state=42),
-#     #     param_distributions=param_distributions,
-#     #     n_iter=20,
-#     #     cv=5,
-#     #     n_jobs=-1,
-#     #     scoring='r2',
-#     #     verbose=1,
-#     #     random_state=42
-#     # )
+    forecaste_data = pd.concat(
+        [train_data['yhat_train'], test_data['yhat_test']])
+    forecaste_data_ds = pd.concat([train_data['ds'], test_data['ds']])
 
-#     # random_search.fit(X_train_scaled, y_train)
-#     # print(f"Best parameters: {random_search.best_params_}")
+    fig = px.line()
 
-#     daily_best_params = {'n_estimators': 200,
-#                          'min_samples_split': 10, 'min_samples_leaf': 4, 'max_depth': 20}
+    # Actual training data (blue)
+    fig.add_scatter(x=train_data['ds'], y=y_train, mode='lines',
+                    name='Actual (Train)', line=dict(color='blue'))
 
-#     st.write('After parameter tuning with RandomSearchCV, the following were defined as the best parameters for the Random Forest model:')
-#     for parameter, value in daily_best_params.items():
-#         st.markdown(f"**{parameter}:** {value}")
+    # Actual test data (green)
+    fig.add_scatter(x=test_data['ds'], y=y_test, mode='lines',
+                    name='Actual (Test)', line=dict(color='green'))
 
-#     # Final model with best parameters
-#     rf_daily = RandomForestRegressor(
-#         **daily_best_params,
-#         random_state=42
-#     )
+    # Predicted data (red)
+    fig.add_scatter(x=forecaste_data_ds, y=forecaste_data,
+                    mode='lines', name='Predicted', line=dict(color='red'))
 
-#     rf_daily.fit(X_daily_train_scaled, y_daily_train)
+    fig.update_layout(
+        title='Actual vs Predicted Fuel Cell Electrical Efficiency with Random Forest',
+        xaxis_title='Date',
+        yaxis_title='Fuel Cell Electrical Efficiency (%)',
+        legend_title='Legend',
+        template='plotly_white'
+    )
+    ''
+    ''
+    st.plotly_chart(fig)
 
-#     y_daily_pred_rf = rf_daily.predict(X_daily_test_scaled)
+with tabs[2]:
+    st.write("### Prophet")
+    st.write("In this tab, we use Facebook Prophet, a robust time series forecasting tool designed for data with strong seasonal patterns. Prophet models the efficiency trend over time, incorporating external factors like the hydrogen flow rate. It generates future forecasts along with an uncertainty interval, providing insights into possible variations. The graph displays actual data and predicted efficiency trends, showcasing the model’s ability to capture seasonal and long-term patterns effectively.")
 
-#     ''
-#     ''
-#     st.write("#### Model Metrics")
-#     daily_metrics = {
-#         "MSE": mean_squared_error(y_daily_test, y_daily_pred_rf),
-#         "RMSE": np.sqrt(mean_squared_error(y_daily_test, y_daily_pred_rf)),
-#         "MAE": mean_absolute_error(y_daily_test, y_daily_pred_rf),
-#         "MAPE": mean_absolute_percentage_error(y_daily_test, y_daily_pred_rf),
-#         "R² Score": r2_score(y_daily_test, y_daily_pred_rf),
-#     }
-#     num_metrics = len(metrics)
+    model = Prophet()
+    # model.fit(train_data[['ds','y']])
+    # model = Prophet(growth='logistic')
+    # Add the external regressor(s) to the model
+    model.add_regressor('HyFlow')
+    model.add_seasonality(name='daily', period=1, fourier_order=5)
+    model.fit(train_data)
+    test_p = data[['ds', 'HyFlow']]
 
-#     # num_columns = (num_metrics + 1) // 2
-#     num_columns = 5
-#     cols = st.columns(num_columns, gap='large')
+    forecast = model.predict(test_p)
 
-#     for i, (metric_name, value) in enumerate(daily_metrics.items()):
-#         # best_value = best_metrics[metric_name]['value']
-#         color = "#90EE90"
-#         # color = "#90EE90" if np.isclose(value, best_value) else "#f0f0f0"
-#         col_index = i % num_columns
-#         # col_index = i // 2
+    # Calculate  mean squared error
+    print('Train MSE: %f' %
+          np.mean((forecast.loc[:7000, 'yhat']-train_data['y'])**2))
+    # Calculate  mean absolute error
+    print('Train MAE: %f' % mean_absolute_error(
+        train_data['y'], forecast.loc[:6999, 'yhat']))
+    # Calculate R2 score
+    print('Train R2: %f' % r2_score(
+        train_data['y'], forecast.loc[:6999, 'yhat']))
+    # Calculate  mean squared error
+    print('Test MSE: %f' %
+          np.mean((forecast.loc[7000:, 'yhat']-test_data['y'])**2))
+    # Calculate  mean absolute error
+    print('Train MAE: %f' % mean_absolute_error(
+        test_data['y'], forecast.loc[7000:, 'yhat']))
+    # Calculate R2 score
+    print('Train R2: %f' % r2_score(
+        test_data['y'], forecast.loc[7000:, 'yhat']))
 
-#         with cols[col_index]:
-#             st.markdown(
-#                 f"""
-#                 <div style="background-color: {color}; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; text-align: center">
-#                     <strong>{metric_name}</strong>
-#                     <p style="padding: 0; margin: 0">{value:.4f}</p>
-#                 </div>
-#                 """,
-#                 unsafe_allow_html=True
-#             )
+    st.write("#### Model Metrics")
+    metrics = {
+        "MSE Train": np.mean((forecast.loc[:7000, 'yhat']-train_data['y'])**2),
+        "MSE Test": np.mean((forecast.loc[7000:, 'yhat']-test_data['y'])**2),
+        "MAE Train": mean_absolute_error(train_data['y'], forecast.loc[:6999, 'yhat']),
+        "MAE Test": mean_absolute_error(test_data['y'], forecast.loc[7000:, 'yhat']),
+        "R² Score Train": r2_score(train_data['y'], forecast.loc[:6999, 'yhat']),
+        "R² Score Test": r2_score(test_data['y'], forecast.loc[7000:, 'yhat']),
+    }
+    num_metrics = len(metrics)
 
-#     daily_importances = rf_daily.feature_importances_
-#     ''
-#     ''
-#     st.subheader("Feature Importance (Daily Average)")
-#     plot_feature_importance(daily_features, daily_importances)
+    # num_columns = (num_metrics + 1) // 2
+    num_columns = 3
+    cols = st.columns(num_columns, gap='large')
 
-#     st.subheader("Actual vs Predicted (Daily Average)")
-#     plot_actual_vs_predicted(y_daily_test, y_daily_pred_rf)
+    for i, (metric_name, value) in enumerate(metrics.items()):
+        # best_value = best_metrics[metric_name]['value']
+        color = "#90EE90"
+        # color = "#90EE90" if np.isclose(value, best_value) else "#f0f0f0"
+        col_index = i % num_columns
+        # col_index = i // 2
+
+        with cols[col_index]:
+            st.markdown(
+                f"""
+                <div style="background-color: {color}; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; text-align: center">
+                    <strong>{metric_name}</strong> 
+                    <p style="padding: 0; margin: 0">{value:.4f}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    fig = px.line()
+
+    # Actual training data (blue)
+    fig.add_scatter(x=train_data['ds'], y=y_train, mode='lines',
+                    name='Actual (Train)', line=dict(color='blue'))
+
+    # Actual test data (green)
+    fig.add_scatter(x=test_data['ds'], y=y_test, mode='lines',
+                    name='Actual (Test)', line=dict(color='green'))
+
+    # Predicted data (red)
+    fig.add_scatter(x=forecast['ds'], y=forecast['yhat'],
+                    mode='lines', name='Predicted', line=dict(color='red'))
+
+    fig.add_trace(go.Scatter(
+        x=forecast['ds'].tolist() + forecast['ds'].tolist()[::-1],
+        y=forecast['yhat_upper'].tolist(
+        ) + forecast['yhat_lower'].tolist()[::-1],
+        fill='toself',
+        fillcolor='rgba(255,192,203,0.3)',
+        line=dict(color='rgba(255,192,203,0.3)'),
+        hoverinfo="skip",
+        showlegend=True,
+        name='Uncertainty Interval',
+    ))
+
+    fig.update_layout(
+        title='Actual vs Predicted Fuel Cell Electrical Efficiency with Prophet',
+        xaxis_title='Date',
+        yaxis_title='Fuel Cell Electrical Efficiency (%)',
+        legend_title='Legend',
+        template='plotly_white'
+    )
+    ''
+    ''
+    st.plotly_chart(fig)
