@@ -395,21 +395,29 @@ with tabs[1]:
     
     st.plotly_chart(fig)
     
-    # Error analysis by solar condition
-    error_by_condition = X_enhanced_test_with_pred.groupby('Dominant_Condition').agg({
-        'Actual': ['mean', 'count'],
-        'Predicted': 'mean',
-        'Actual': lambda x: mean_absolute_error(x, X_enhanced_test_with_pred.loc[x.index, 'Predicted'])
-    })
-    
-    error_by_condition.columns = ['MAE', 'Count', 'Avg Predicted']
+    # Error analysis by solar condition - FIXED SECTION
+    # Create a simpler DataFrame with the metrics we need
+    mae_by_condition = X_enhanced_test_with_pred.groupby('Dominant_Condition').apply(
+        lambda x: mean_absolute_error(x['Actual'], x['Predicted'])
+    ).reset_index(name='MAE')
+
+    count_by_condition = X_enhanced_test_with_pred.groupby('Dominant_Condition').size().reset_index(name='Count')
+
+    avg_actual_by_condition = X_enhanced_test_with_pred.groupby('Dominant_Condition')['Actual'].mean().reset_index(name='Avg Actual')
+
+    avg_pred_by_condition = X_enhanced_test_with_pred.groupby('Dominant_Condition')['Predicted'].mean().reset_index(name='Avg Predicted')
+
+    # Merge all the metrics into a single DataFrame
+    error_analysis = pd.merge(mae_by_condition, count_by_condition, on='Dominant_Condition')
+    error_analysis = pd.merge(error_analysis, avg_actual_by_condition, on='Dominant_Condition')
+    error_analysis = pd.merge(error_analysis, avg_pred_by_condition, on='Dominant_Condition')
     
     st.subheader("Error Analysis by Solar Condition")
-    st.dataframe(error_by_condition)
+    st.dataframe(error_analysis)
     
     # Plot MAE by solar condition
     fig = px.bar(
-        error_by_condition.reset_index(),
+        error_analysis, 
         x='Dominant_Condition',
         y='MAE',
         color='Dominant_Condition',
@@ -419,11 +427,11 @@ with tabs[1]:
     )
     
     # Add count labels
-    for i, condition in enumerate(error_by_condition.index):
+    for i, row in enumerate(error_analysis.itertuples()):
         fig.add_annotation(
-            x=condition,
-            y=error_by_condition.loc[condition, 'MAE'] + 5,
-            text=f"n={error_by_condition.loc[condition, 'Count']}",
+            x=row.Dominant_Condition,
+            y=row.MAE + 5,
+            text=f"n={row.Count}",
             showarrow=False
         )
     
