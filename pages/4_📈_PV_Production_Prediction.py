@@ -518,32 +518,31 @@ with tabs[2]:
     with col2:
         st.subheader("Prediction Result")
         
-        # Create one-hot encoding for solar condition
-        condition_one_hot = {f"SolarCond_{cond}": 1 if cond == selected_condition else 0 
-                            for cond in condition_categories}
+        # Create input for prediction - FIXED: Make sure we create all the features the model expects
+        input_data = pd.DataFrame({
+            'Solar Irradiance (W/m^2)': [irradiance],
+            'Electrolyser Power (kW)': [electrolyser_power],
+            'Ambient Temperature (°C)': [ambient_temp],
+            'Electrolyzer Losses (kWh)': [electrolyzer_losses],
+            'Hour': [hour],
+            'SolarCond_Very Low': [1 if selected_condition == 'Very Low' else 0],
+            'SolarCond_Low': [1 if selected_condition == 'Low' else 0],
+            'SolarCond_Medium': [1 if selected_condition == 'Medium' else 0],
+            'SolarCond_High': [1 if selected_condition == 'High' else 0],
+            'SolarCond_Very High': [1 if selected_condition == 'Very High' else 0],
+            'SolarCond_Night/Overcast': [1 if selected_condition == 'Night/Overcast' else 0]
+        })
         
-        # Create input for prediction
-        input_data = {
-            'Solar Irradiance (W/m^2)': irradiance,
-            'Electrolyser Power (kW)': electrolyser_power,
-            'Ambient Temperature (°C)': ambient_temp,
-            'Electrolyzer Losses (kWh)': electrolyzer_losses,
-            'Hour': hour,
-        }
-        
-        # Add solar condition one-hot encoding
-        input_data.update(condition_one_hot)
-        
-        # Convert to DataFrame
-        input_df = pd.DataFrame([input_data])
+        # Make sure the columns are in the same order as the training data
+        input_data = input_data[enhanced_features]
         
         # Scale numeric features
-        input_df_scaled = input_df.copy()
-        input_df_scaled[numeric_features] = scaler_enhanced.transform(input_df[numeric_features])
+        input_data_scaled = input_data.copy()
+        input_data_scaled[numeric_features] = scaler_enhanced.transform(input_data[numeric_features])
         
         # Make prediction
         if st.button("Predict PV Production"):
-            prediction = rf_enhanced.predict(input_df_scaled)[0]
+            prediction = rf_enhanced.predict(input_data_scaled)[0]
             
             # Show prediction with nice formatting
             st.markdown(
