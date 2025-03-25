@@ -6,3 +6,4 @@ scikit-learn
 prophet 
 matplotlib
 xgboost
+statsmodels
