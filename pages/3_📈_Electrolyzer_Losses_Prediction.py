@@ -309,19 +309,20 @@ if st.button("Predict Electrolyzer Losses"):
 best_metrics = evaluate_best_metrics(model_metrics)
 st.divider()
 st.write('### Model Comparison')
-st.write(
-    """
-    This section provides a comprehensive comparison of different machine learning models used for predicting electrolyzer losses which will allow users to easily compare the performance of different models, understand their strengths and weaknesses, and visualize how well each model predicts electrolyzer losses over time..
+with st.expander("See explanation", icon=":material/info:"):
+    st.write(
+        """
+        This section provides a comprehensive comparison of different machine learning models used for predicting electrolyzer losses which will allow users to easily compare the performance of different models, understand their strengths and weaknesses, and visualize how well each model predicts electrolyzer losses over time..
 
-    It evaluates and displays the best metrics across all models (highlighted in green) for various performance indicators (R², MSE, MAE) for both training and test datasets.
+        It evaluates and displays the best metrics across all models (highlighted in green) for various performance indicators (R², MSE, MAE) for both training and test datasets.
 
-    It uses a tabbed interface with four tabs, each dedicated to a specific model: Random Forest, Gradient Boosting, XGBoost, and Prophet.
+        It uses a tabbed interface with four tabs, each dedicated to a specific model: Random Forest, Gradient Boosting, XGBoost, and Prophet.
 
-    For each model tab, it displays the model's performance metrics, shows how these metrics compare to the best metrics across all models and presents a plot comparing predicted vs. actual electrolyzer losses for both training and test data
+        For each model tab, it displays the model's performance metrics, shows how these metrics compare to the best metrics across all models and presents a plot comparing predicted vs. actual electrolyzer losses for both training and test data
 
-    The Prophet model tab includes an additional interactive Plotly chart that visualizes actual electrolyzer losses for training and test data, predicted electrolyzer losses and uncertainty intervals for the predictions.
-    """
-)
+        The Prophet model tab includes an additional interactive Plotly chart that visualizes actual electrolyzer losses for training and test data, predicted electrolyzer losses and uncertainty intervals for the predictions.
+        """
+    )
 
 tab_titles = ["Random Forest", "Gradient Boosting", "XGBoost", "Prophet"]
 tabs = st.tabs(tab_titles)
