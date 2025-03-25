@@ -41,59 +41,6 @@ def get_list_nnan(column_name):
     return list_notnan
 
 
-# list_notnan = get_list_nnan('Electrolyzer Losses (kWh)')
-# X = df[feature_col].loc[list_notnan]
-# y = df['Electrolyzer Losses (kWh)'].loc[list_notnan]
-
-# X_train, X_test, y_train, y_test = train_test_split(
-#     X, y, test_size=0.1, random_state=13
-# )
-# params = {
-#     "n_estimators": 10,
-#     "max_depth": 10,
-#     "min_samples_split": 10,
-#     "learning_rate": 0.01,
-#     "loss": "squared_error",
-# }
-
-# reg = GradientBoostingRegressor(**params)
-# reg.fit(X_train, y_train)
-
-# mset = mean_squared_error(y_train, reg.predict(X_train))
-# print("The mean squared error (MSE) on train set: {:.4f}".format(mset))
-# mse = mean_squared_error(y_test, reg.predict(X_test))
-# print("The mean squared error (MSE) on test set: {:.4f}".format(mse))
-
-# maet = mean_absolute_error(y_train, reg.predict(X_train))
-# print("The mean absolute error (MAE) on train set: {:.4f}".format(maet))
-# mae = mean_absolute_error(y_test, reg.predict(X_test))
-# print("The mean absolute error (MAE) on test set: {:.4f}".format(mae))
-
-# r2t = r2_score(y_train, reg.predict(X_train))
-# print("The R2 score on train set: {:.4f}".format(r2t))
-# r2 = r2_score(y_test, reg.predict(X_test))
-# print("The R2 score on test set: {:.4f}".format(r2))
-
-# regr = RandomForestRegressor(n_estimators=10, max_depth=10, random_state=13)
-# regr.fit(X_train, y_train)
-
-
-# mset = mean_squared_error(y_train, regr.predict(X_train))
-# print("The mean squared error (MSE) on train set: {:.4f}".format(mset))
-# mse = mean_squared_error(y_test, regr.predict(X_test))
-# print("The mean squared error (MSE) on test set: {:.4f}".format(mse))
-
-
-# maet = mean_absolute_error(y_train, regr.predict(X_train))
-# print("The mean absolute error (MAE) on train set: {:.4f}".format(maet))
-# mae = mean_absolute_error(y_test, regr.predict(X_test))
-# print("The mean absolute error (MAE) on test set: {:.4f}".format(mae))
-
-# r2t = r2_score(y_train, regr.predict(X_train))
-# print("The R2 score on train set: {:.4f}".format(r2t))
-# r2 = r2_score(y_test, regr.predict(X_test))
-# print("The R2 score on test set: {:.4f}".format(r2))
-
 df['DateTime'] = pd.to_datetime(df['DateTime'])
 data = df[['DateTime']+feature_col+output]
 data.columns = ['ds', 'HyFlow', 'y']
@@ -205,21 +152,6 @@ with tabs[1]:
     regr = RandomForestRegressor(
         n_estimators=10, max_depth=10, random_state=13)
     regr.fit(X_train, y_train)
-
-    # mset = mean_squared_error(y_train, regr.predict(X_train))
-    # print("The mean squared error (MSE) on train set: {:.4f}".format(mset))
-    # mse = mean_squared_error(y_test, regr.predict(X_test))
-    # print("The mean squared error (MSE) on test set: {:.4f}".format(mse))
-
-    # maet = mean_absolute_error(y_train, regr.predict(X_train))
-    # print("The mean absolute error (MAE) on train set: {:.4f}".format(maet))
-    # mae = mean_absolute_error(y_test, regr.predict(X_test))
-    # print("The mean absolute error (MAE) on test set: {:.4f}".format(mae))
-
-    # r2t = r2_score(y_train, regr.predict(X_train))
-    # print("The R2 score on train set: {:.4f}".format(r2t))
-    # r2 = r2_score(y_test, regr.predict(X_test))
-    # print("The R2 score on test set: {:.4f}".format(r2))
 
     st.write("#### Model Metrics")
     metrics = {

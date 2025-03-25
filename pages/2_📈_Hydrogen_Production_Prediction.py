@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from prophet import Prophet
 from prophet.diagnostics import cross_validation, performance_metrics
 import plotly.graph_objects as go
+import plotly.express as px
 import math
 import filters
 
@@ -87,6 +88,11 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
         y_pred_train = regr.predict(X_train)
         y_pred_test = regr.predict(X_test)
 
+        df_results = pd.DataFrame({
+            "Actual": y_test.values,
+            "Predicted": y_pred_test
+        })
+
     with colB:
         mse_train = mean_squared_error(y_train, y_pred_train)
         mse_test = mean_squared_error(y_test, y_pred_test)
@@ -146,28 +152,43 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
     Deviations from this line show where the model over- or under-predicts. 
     This visualization helps assess the model's overall performance and identify any systematic prediction errors.
     """)
-    fig_pred_actual = go.Figure()
-    fig_pred_actual.add_trace(go.Scatter(
-        x=y_test,
-        y=y_pred_test,
-        mode='markers',
-        marker=dict(color='blue', size=8),
-        name='Predictions'
-    ))
-    fig_pred_actual.add_trace(go.Scatter(
-        x=[min(y_test), max(y_test)],
-        y=[min(y_test), max(y_test)],
-        mode='lines',
-        line=dict(color='red', dash='dash'),
-        name='Perfect Prediction'
-    ))
-    fig_pred_actual.update_layout(
-        title='Predicted vs Actual Values',
-        xaxis_title='Actual Values',
-        yaxis_title='Predicted Values',
-        height=500
-    )
-    st.plotly_chart(fig_pred_actual, use_container_width=True)
+
+    train_col, test_col = st.columns(2)
+
+    with train_col:
+        fig_pred_actual = px.scatter(
+            x=y_train,
+            y=y_pred_train,
+            labels={'x': 'Actual Values (Train)',
+                    'y': 'Predicted Values (Train)'},
+            title='Training Set: Actual vs Predicted',
+            trendline='ols',
+            trendline_color_override='red'
+        )
+        fig_pred_actual.add_shape(
+            type="line", line=dict(dash='dash'),
+            x0=y_train.min(), y0=y_train.min(),
+            x1=y_train.max(), y1=y_train.max()
+        )
+
+        st.plotly_chart(fig_pred_actual, use_container_width=True)
+
+    with test_col:
+        fig_test = px.scatter(
+            x=y_test,
+            y=y_pred_test,
+            labels={'x': 'Actual Values (Test)',
+                    'y': 'Predicted Values (Test)'},
+            title='Test Set: Actual vs Predicted',
+            trendline='ols',
+            trendline_color_override='red'
+        )
+        fig_test.add_shape(
+            type="line", line=dict(dash='dash'),
+            x0=y_test.min(), y0=y_test.min(),
+            x1=y_test.max(), y1=y_test.max()
+        )
+        st.plotly_chart(fig_test)
 
 elif model_type == "Prophet":
     st.header(f"{model_type} Model Training and Prediction")
@@ -190,8 +211,6 @@ elif model_type == "Prophet":
 
         y_true = test_data['y']
         y_pred = forecast['yhat']
-        # mse = mean_squared_error(y_true, y_pred)
-        # st.write(f"Mean Squared Error: {mse}")
 
         df_cv = cross_validation(
             model, horizon='31 days', period='16 days', initial='300 days')
@@ -244,7 +263,7 @@ elif model_type == "Prophet":
         st.success(
             f"Predicted Hydrogen Production: {prediction['yhat'].values[0]:.2f} kg")
 
-    # Plot the forecast
+    # Plot actual hydrogen prpoduction
     # st.subheader("Forecast Plot")
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -262,28 +281,61 @@ elif model_type == "Prophet":
     Deviations from this line show where the model over- or under-predicts. 
     This visualization helps assess the model's overall performance and identify any systematic prediction errors.
     """)
-    fig_forecast_actual = go.Figure()
-    fig_forecast_actual.add_trace(go.Scatter(
-        x=test_data['y'],
-        y=forecast['yhat'],
-        mode='markers',
-        marker=dict(color='blue', size=8),
-        name='Forecasts'
-    ))
-    fig_forecast_actual.add_trace(go.Scatter(
-        x=[min(test_data['y']), max(test_data['y'])],
-        y=[min(test_data['y']), max(test_data['y'])],
-        mode='lines',
-        line=dict(color='red', dash='dash'),
-        name='Perfect Forecast'
-    ))
-    fig_forecast_actual.update_layout(
-        title='Forecasted vs Actual Values',
-        xaxis_title='Actual Values',
-        yaxis_title='Forecasted Values',
-        height=500
-    )
-    st.plotly_chart(fig_forecast_actual, use_container_width=True)
+    # fig_forecast_actual = go.Figure()
+    # fig_forecast_actual.add_trace(go.Scatter(
+    #     x=test_data['y'],
+    #     y=forecast['yhat'],
+    #     mode='markers',
+    #     marker=dict(color='blue', size=8),
+    #     name='Forecasts'
+    # ))
+    # fig_forecast_actual.add_trace(go.Scatter(
+    #     x=[min(test_data['y']), max(test_data['y'])],
+    #     y=[min(test_data['y']), max(test_data['y'])],
+    #     mode='lines',
+    #     line=dict(color='red', dash='dash'),
+    #     name='Perfect Forecast'
+    # ))
+    # fig_forecast_actual.update_layout(
+    #     title='Forecasted vs Actual Values',
+    #     xaxis_title='Actual Values',
+    #     yaxis_title='Forecasted Values',
+    #     height=500
+    # )
+
+    # fig_forecast_actual = px.line()
+
+    # # Predicted data (blue)
+    # fig_forecast_actual.add_scatter(x=test_data['y'], y=forecast['yhat'], mode='lines', name='Forecasts', line=dict(color='blue'))
+
+    # # Actual test data (green)
+    # fig_forecast_actual.add_scatter(x=test_data['ds'], y=y_test, mode='lines',
+    #                 name='Actual (Test)', line=dict(color='green'))
+
+    # # Predicted data (red)
+    # fig_forecast_actual.add_scatter(x=forecast['ds'], y=forecast['yhat'],
+    #                 mode='lines', name='Predicted', line=dict(color='red'))
+
+    # fig_forecast_actual.add_trace(go.Scatter(
+    #     x=forecast['ds'].tolist() + forecast['ds'].tolist()[::-1],
+    #     y=forecast['yhat_upper'].tolist(
+    #     ) + forecast['yhat_lower'].tolist()[::-1],
+    #     fill='toself',
+    #     fillcolor='rgba(255,192,203,0.3)',
+    #     line=dict(color='rgba(255,192,203,0.3)'),
+    #     hoverinfo="skip",
+    #     showlegend=True,
+    #     name='Uncertainty Interval',
+    # ))
+
+    # fig_forecast_actual.update_layout(
+    #     title='Actual vs Predicted Fuel Cell Electrical Efficiency with Prophet',
+    #     xaxis_title='Date',
+    #     yaxis_title='Fuel Cell Electrical Efficiency (%)',
+    #     legend_title='Legend',
+    #     template='plotly_white'
+    # )
+    # st.plotly_chart(fig_forecast_actual, use_container_width=True)
 
 ''
 ''
@@ -322,7 +374,6 @@ for i, df in enumerate(filtered_dataframes):
         )
 
         fig.update_xaxes(
-            tickformat='%Y-%m-%d %H:%M',
             tickfont=dict(color='#0f2113'),
             titlefont=dict(color='#0f2113')
         )
