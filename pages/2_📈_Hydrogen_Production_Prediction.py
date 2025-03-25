@@ -375,12 +375,12 @@ for i, df in enumerate(filtered_dataframes):
 
         fig.update_xaxes(
             tickfont=dict(color='#0f2113'),
-            titlefont=dict(color='#0f2113')
+            title_font=dict(color='#0f2113')
         )
 
         fig.update_yaxes(
             tickfont=dict(color='#0f2113'),
-            titlefont=dict(color='#0f2113')
+            title_font=dict(color='#0f2113')
         )
 
         st.plotly_chart(fig, use_container_width=True)
