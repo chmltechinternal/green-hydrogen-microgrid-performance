@@ -19,7 +19,6 @@ This application predicts hydrogen production for a microgrid system based on so
 Choose a model, adjust parameters, and explore the results!
 """)
 
-# Load and display data
 df = filters.load_data()
 
 # Dataset overview
@@ -33,14 +32,10 @@ output = ['Hydrogen Production (kg)']
 
 data = df[['DateTime', 'Month', 'Hour'] + feature_col + output]
 
-col1, col2 = st.columns(2)
 
-with col1:
-    st.header("Model Selection")
-    model_type = st.selectbox("Choose a prediction model:", [
-                              "Random Forest", "Gradient Boosting", "Prophet"])
-''
-''
+st.subheader("Compare Different  Model Predictions")
+tab_titles = ["Random Forest", "Gradient Boosting", "Prophet"]
+tabs = st.tabs(tab_titles)
 
 
 def get_list_nnan(column_name):
@@ -59,30 +54,24 @@ list_notnan = get_list_nnan('Hydrogen Production (kg)')
 X = df[feature_col].loc[list_notnan]
 y = df['Hydrogen Production (kg)'].loc[list_notnan]
 
-st.divider()
 
-
-if model_type in ["Random Forest", "Gradient Boosting"]:
-    st.header(f"{model_type} Model Training and Prediction")
+with tabs[0]:
+    st.write(f"### Random Forest Model Training and Prediction")
     colA, colB = st.columns([2, 4], gap="large", vertical_alignment="center")
 
     with colA:
         st.subheader("Train Model")
         st.write("Select the number of estimators and max depth to train the model and view different metrics to help determine the suitability of the model for hydrogen production prediction")
         n_estimators = st.slider(
-            "Number of Estimators", 10, 200, 50, help="The number of trees in the forest.")
+            "Number of Estimators", 10, 200, 50, help="The number of trees in the forest.", key="rf_n_est")
         max_depth = st.slider("Max Depth", 5, 20, 10,
-                              help="The maximum depth of the tree.")
+                              help="The maximum depth of the tree.", key="rf_max_dpth")
 
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42)
 
-        if model_type == "Random Forest":
-            regr = RandomForestRegressor(
-                n_estimators=n_estimators, max_depth=max_depth, random_state=42)
-        else:
-            regr = GradientBoostingRegressor(
-                n_estimators=n_estimators, max_depth=max_depth, random_state=42)
+        regr = RandomForestRegressor(
+            n_estimators=n_estimators, max_depth=max_depth, random_state=42)
 
         regr.fit(X_train, y_train)
         y_pred_train = regr.predict(X_train)
@@ -132,9 +121,9 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
         st.write(
             "Enter new values for solar irradiance and ambient temperature to predict hydrogen production:")
         solar_irradiance = st.number_input(
-            "Solar Irradiance (W/m^2)", value=500, step=10)
+            "Solar Irradiance (W/m^2)", value=500, step=10, key="rf_solar_irr")
         ambient_temperature = st.number_input(
-            "Ambient Temperature (°C)", value=25, step=1)
+            "Ambient Temperature (°C)", value=25, step=1, key="rf_amb__temp")
 
         new_data = pd.DataFrame(
             [[solar_irradiance, ambient_temperature]], columns=feature_col)
@@ -147,9 +136,9 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
     ''
     st.subheader("Predicted vs Actual")
     st.write("""
-    The predicted vs actual chart compares the model's predictions with the actual observed values. 
-    Points closer to the diagonal line indicate more accurate predictions. 
-    Deviations from this line show where the model over- or under-predicts. 
+    The predicted vs actual chart compares the model's predictions with the actual observed values.
+    Points closer to the diagonal line indicate more accurate predictions.
+    Deviations from this line show where the model over- or under-predicts.
     This visualization helps assess the model's overall performance and identify any systematic prediction errors.
     """)
 
@@ -171,7 +160,8 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
             x1=y_train.max(), y1=y_train.max()
         )
 
-        st.plotly_chart(fig_pred_actual, use_container_width=True)
+        st.plotly_chart(fig_pred_actual, use_container_width=True,
+                        key='rf_actual_pred_train')
 
     with test_col:
         fig_test = px.scatter(
@@ -188,10 +178,185 @@ if model_type in ["Random Forest", "Gradient Boosting"]:
             x0=y_test.min(), y0=y_test.min(),
             x1=y_test.max(), y1=y_test.max()
         )
-        st.plotly_chart(fig_test)
+        st.plotly_chart(fig_test, key='rf_actual_pred_test')
 
-elif model_type == "Prophet":
-    st.header(f"{model_type} Model Training and Prediction")
+    st.subheader("Feature Importance")
+    st.write("""
+    Feature importance shows the relative importance of each input variable in predicting the target variable.
+    Higher values indicate that the feature has a stronger influence on the model's predictions.
+    This can help identify which factors are most crucial for hydrogen production in your system.
+    """)
+    importance = regr.feature_importances_
+    feature_importance = pd.DataFrame(
+        {'feature': feature_col, 'importance': importance})
+    feature_importance = feature_importance.sort_values(
+        'importance', ascending=False)
+
+    fig_importance = go.Figure(go.Bar(
+        x=feature_importance['importance'],
+        y=feature_importance['feature'],
+        orientation='h'
+    ))
+    fig_importance.update_layout(
+        title='Feature Importance',
+        xaxis_title='Importance',
+        yaxis_title='Features',
+        height=400
+    )
+    st.plotly_chart(fig_importance, use_container_width=True, key='rf_imp')
+
+with tabs[1]:
+    st.write(f"### Gradient Boosting Model Training and Prediction")
+    colA, colB = st.columns([2, 4], gap="large", vertical_alignment="center")
+
+    with colA:
+        st.subheader("Train Model")
+        st.write("Select the number of estimators and max depth to train the model and view different metrics to help determine the suitability of the model for hydrogen production prediction")
+        n_estimators = st.slider(
+            "Number of Estimators", 10, 200, 50, help="The number of trees in the forest.", key="gb_n_est")
+        max_depth = st.slider("Max Depth", 5, 20, 10,
+                              help="The maximum depth of the tree.", key="gb_max_dpth")
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42)
+
+        regr = GradientBoostingRegressor(
+            n_estimators=n_estimators, max_depth=max_depth, random_state=42)
+
+        regr.fit(X_train, y_train)
+        y_pred_train = regr.predict(X_train)
+        y_pred_test = regr.predict(X_test)
+
+        df_results = pd.DataFrame({
+            "Actual": y_test.values,
+            "Predicted": y_pred_test
+        })
+
+    with colB:
+        mse_train = mean_squared_error(y_train, y_pred_train)
+        mse_test = mean_squared_error(y_test, y_pred_test)
+        r2_train = r2_score(y_train, y_pred_train)
+        r2_test = r2_score(y_test, y_pred_test)
+        rmse_train = np.sqrt(mse_train)
+        rmse_test = np.sqrt(mse_test)
+        mae_train = mean_absolute_error(y_train, y_pred_train)
+        mae_test = mean_absolute_error(y_test, y_pred_test)
+
+        col1, col2, col3, col4 = st.columns(4, border=True)
+        col5, col6, col7, col8 = st.columns(4, border=True)
+
+        def create_metric_card(container, title, value):
+            with container:
+                st.markdown(
+                    f"<div><h6 style='text-align: center;'>{title}</h6></div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<h6 style='text-align: center;'>{value:.2f}</h6>", unsafe_allow_html=True)
+
+        # Create cards for each metric
+        create_metric_card(col1, "MSE (Train)", mse_train)
+        create_metric_card(col2, "R² (Train)", r2_train)
+        create_metric_card(col3, "RMSE (Train)", rmse_train)
+        create_metric_card(col4, "MAE (Train)", mae_train)
+        create_metric_card(col5, "MSE (Test)", mse_test)
+        create_metric_card(col6, "R² (Test)", r2_test)
+        create_metric_card(col7, "RMSE (Test)", rmse_test)
+        create_metric_card(col8, "MAE (Test)", mae_test)
+
+    col9, col10 = st.columns(2, gap="large", vertical_alignment="center")
+
+    with col9:
+        ''
+        ''
+        st.subheader("Predict Hydrogen Production")
+        st.write(
+            "Enter new values for solar irradiance and ambient temperature to predict hydrogen production:")
+        solar_irradiance = st.number_input(
+            "Solar Irradiance (W/m^2)", value=500, step=10, key="gb_solar_irr")
+        ambient_temperature = st.number_input(
+            "Ambient Temperature (°C)", value=25, step=1, key="gb_amb_temp")
+
+        new_data = pd.DataFrame(
+            [[solar_irradiance, ambient_temperature]], columns=feature_col)
+        prediction = regr.predict(new_data)[0]
+
+    with col10:
+        st.success(f"Predicted Hydrogen Production: {prediction:.2f} kg")
+
+    ''
+    ''
+    st.subheader("Predicted vs Actual")
+    st.write("""
+    The predicted vs actual chart compares the model's predictions with the actual observed values.
+    Points closer to the diagonal line indicate more accurate predictions.
+    Deviations from this line show where the model over- or under-predicts.
+    This visualization helps assess the model's overall performance and identify any systematic prediction errors.
+    """)
+
+    train_col, test_col = st.columns(2)
+
+    with train_col:
+        fig_pred_actual = px.scatter(
+            x=y_train,
+            y=y_pred_train,
+            labels={'x': 'Actual Values (Train)',
+                    'y': 'Predicted Values (Train)'},
+            title='Training Set: Actual vs Predicted',
+            trendline='ols',
+            trendline_color_override='red'
+        )
+        fig_pred_actual.add_shape(
+            type="line", line=dict(dash='dash'),
+            x0=y_train.min(), y0=y_train.min(),
+            x1=y_train.max(), y1=y_train.max()
+        )
+
+        st.plotly_chart(fig_pred_actual, use_container_width=True,
+                        key='gb_actual_pred_train')
+
+    with test_col:
+        fig_test = px.scatter(
+            x=y_test,
+            y=y_pred_test,
+            labels={'x': 'Actual Values (Test)',
+                    'y': 'Predicted Values (Test)'},
+            title='Test Set: Actual vs Predicted',
+            trendline='ols',
+            trendline_color_override='red'
+        )
+        fig_test.add_shape(
+            type="line", line=dict(dash='dash'),
+            x0=y_test.min(), y0=y_test.min(),
+            x1=y_test.max(), y1=y_test.max()
+        )
+        st.plotly_chart(fig_test, key='gb_actual_pred_test')
+
+    st.subheader("Feature Importance")
+    st.write("""
+    Feature importance shows the relative importance of each input variable in predicting the target variable.
+    Higher values indicate that the feature has a stronger influence on the model's predictions.
+    This can help identify which factors are most crucial for hydrogen production in your system.
+    """)
+    importance = regr.feature_importances_
+    feature_importance = pd.DataFrame(
+        {'feature': feature_col, 'importance': importance})
+    feature_importance = feature_importance.sort_values(
+        'importance', ascending=False)
+
+    fig_importance = go.Figure(go.Bar(
+        x=feature_importance['importance'],
+        y=feature_importance['feature'],
+        orientation='h'
+    ))
+    fig_importance.update_layout(
+        title='Feature Importance',
+        xaxis_title='Importance',
+        yaxis_title='Features',
+        height=400
+    )
+    st.plotly_chart(fig_importance, use_container_width=True, key='gb_imp')
+
+with tabs[2]:
+    st.write(f"### Prophet Model Training and Prediction")
     with st.spinner('Training Prophet model... This may take a moment.'):
         prophet_data = df.rename(
             columns={'DateTime': 'ds', 'Hydrogen Production (kg)': 'y'})
@@ -203,7 +368,7 @@ elif model_type == "Prophet":
         model = Prophet()
         for feature in feature_col:
             model.add_regressor(feature)
-        model.add_seasonality(name='daily', period=1, fourier_order=5)
+        model.add_seasonality(name='daily', period=1, fourier_order=4)
         model.fit(train_data)
 
         future = test_data[['ds'] + feature_col]
@@ -218,7 +383,6 @@ elif model_type == "Prophet":
         df_p['horizon_days'] = df_p['horizon'].dt.total_seconds() / \
             (24 * 60 * 60)
 
-    st.success('Model training complete!')
     st.write("This chart visualizes various error metrics (RMSE, MAE, MAPE, MDAPE, and SMAPE) against the forecast horizon in days. It's crucial for assessing the model's predictive accuracy over time and understanding how the forecast quality degrades as we predict further into the future. ")
     fig1 = go.Figure()
     fig1.add_trace(go.Scatter(
@@ -257,22 +421,9 @@ elif model_type == "Prophet":
         })
 
     with colD:
-        # Make prediction
         prediction = model.predict(new_data)
-        # st.write(f"###### Predicted Hydrogen Production: *_{prediction['yhat'].values[0]:.4f} kg_*")
         st.success(
             f"Predicted Hydrogen Production: {prediction['yhat'].values[0]:.2f} kg")
-
-    # Plot actual hydrogen prpoduction
-    # st.subheader("Forecast Plot")
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=test_data['ds'], y=test_data['y'], mode='markers', name='Actual'))
-    fig.add_trace(go.Scatter(
-        x=forecast['ds'], y=forecast['yhat'], mode='lines', name='Forecast'))
-    fig.update_layout(title='Hydrogen Production Forecast',
-                      xaxis_title='Date', yaxis_title='Hydrogen Production (kg)')
-    st.plotly_chart(fig)
 
     st.subheader("Forecasted vs Actual")
     st.write("""
@@ -281,61 +432,28 @@ elif model_type == "Prophet":
     Deviations from this line show where the model over- or under-predicts. 
     This visualization helps assess the model's overall performance and identify any systematic prediction errors.
     """)
-    # fig_forecast_actual = go.Figure()
-    # fig_forecast_actual.add_trace(go.Scatter(
-    #     x=test_data['y'],
-    #     y=forecast['yhat'],
-    #     mode='markers',
-    #     marker=dict(color='blue', size=8),
-    #     name='Forecasts'
-    # ))
-    # fig_forecast_actual.add_trace(go.Scatter(
-    #     x=[min(test_data['y']), max(test_data['y'])],
-    #     y=[min(test_data['y']), max(test_data['y'])],
-    #     mode='lines',
-    #     line=dict(color='red', dash='dash'),
-    #     name='Perfect Forecast'
-    # ))
-    # fig_forecast_actual.update_layout(
-    #     title='Forecasted vs Actual Values',
-    #     xaxis_title='Actual Values',
-    #     yaxis_title='Forecasted Values',
-    #     height=500
-    # )
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=test_data['ds'],
+        y=y_true,
+        mode='markers',
+        name='Actual',
+        marker=dict(color='blue')
+    ))
 
-    # fig_forecast_actual = px.line()
+    # Add predicted values
+    fig.add_trace(go.Scatter(
+        x=test_data['ds'],
+        y=y_pred,
+        mode='lines',
+        name='Predicted',
+        line=dict(color='red')
+    ))
 
-    # # Predicted data (blue)
-    # fig_forecast_actual.add_scatter(x=test_data['y'], y=forecast['yhat'], mode='lines', name='Forecasts', line=dict(color='blue'))
+    fig.update_layout(title='Hydrogen Production Forecast',
+                      xaxis_title='Date', yaxis_title='Hydrogen Production (kg)')
+    st.plotly_chart(fig)
 
-    # # Actual test data (green)
-    # fig_forecast_actual.add_scatter(x=test_data['ds'], y=y_test, mode='lines',
-    #                 name='Actual (Test)', line=dict(color='green'))
-
-    # # Predicted data (red)
-    # fig_forecast_actual.add_scatter(x=forecast['ds'], y=forecast['yhat'],
-    #                 mode='lines', name='Predicted', line=dict(color='red'))
-
-    # fig_forecast_actual.add_trace(go.Scatter(
-    #     x=forecast['ds'].tolist() + forecast['ds'].tolist()[::-1],
-    #     y=forecast['yhat_upper'].tolist(
-    #     ) + forecast['yhat_lower'].tolist()[::-1],
-    #     fill='toself',
-    #     fillcolor='rgba(255,192,203,0.3)',
-    #     line=dict(color='rgba(255,192,203,0.3)'),
-    #     hoverinfo="skip",
-    #     showlegend=True,
-    #     name='Uncertainty Interval',
-    # ))
-
-    # fig_forecast_actual.update_layout(
-    #     title='Actual vs Predicted Fuel Cell Electrical Efficiency with Prophet',
-    #     xaxis_title='Date',
-    #     yaxis_title='Fuel Cell Electrical Efficiency (%)',
-    #     legend_title='Legend',
-    #     template='plotly_white'
-    # )
-    # st.plotly_chart(fig_forecast_actual, use_container_width=True)
 
 ''
 ''
@@ -384,29 +502,3 @@ for i, df in enumerate(filtered_dataframes):
         )
 
         st.plotly_chart(fig, use_container_width=True)
-
-if model_type in ["Random Forest", "Gradient Boosting"]:
-    st.subheader("Feature Importance")
-    st.write("""
-    Feature importance shows the relative importance of each input variable in predicting the target variable. 
-    Higher values indicate that the feature has a stronger influence on the model's predictions. 
-    This can help identify which factors are most crucial for hydrogen production in your system.
-    """)
-    importance = regr.feature_importances_
-    feature_importance = pd.DataFrame(
-        {'feature': feature_col, 'importance': importance})
-    feature_importance = feature_importance.sort_values(
-        'importance', ascending=False)
-
-    fig_importance = go.Figure(go.Bar(
-        x=feature_importance['importance'],
-        y=feature_importance['feature'],
-        orientation='h'
-    ))
-    fig_importance.update_layout(
-        title='Feature Importance',
-        xaxis_title='Importance',
-        yaxis_title='Features',
-        height=400
-    )
-    st.plotly_chart(fig_importance, use_container_width=True)
