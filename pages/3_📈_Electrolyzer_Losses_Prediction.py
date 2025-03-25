@@ -253,12 +253,10 @@ model.add_regressor('E_PV2EZ')
 model.add_regressor('Hydrogen')
 model.add_seasonality(name='daily', period=1, fourier_order=5)
 model.fit(train_data)
-# test_pred = model.make_future_dataframe(periods=1760, freq='h')
 test_p = data[['ds', 'E_PV2EZ', 'Hydrogen']]
 
 forecast = model.predict(test_p)
 
-# Calculate metrics for Prophet
 model_metrics['Prophet'] = {
     "MSE_train": np.mean((forecast.loc[:6999, "yhat"] - train_data["y"]) ** 2),
     "MSE_test": np.mean((forecast.loc[7000:, "yhat"] - test_data["y"]) ** 2),
@@ -307,82 +305,99 @@ if st.button("Predict Electrolyzer Losses"):
                 """,
             unsafe_allow_html=True
         )
-st.divider()
 
 best_metrics = evaluate_best_metrics(model_metrics)
-
+st.divider()
 st.write('### Model Comparison')
-st.write('#### Random Forest Model')
-display_metrics('Random Forest', model_metrics, best_metrics)
-plot_predict_v_actual('Random Forest', train_data, test_data,
-                      y_train, rf_y_train_pred, rf_y_test_pred)
+st.write(
+    """
+    This section provides a comprehensive comparison of different machine learning models used for predicting electrolyzer losses which will allow users to easily compare the performance of different models, understand their strengths and weaknesses, and visualize how well each model predicts electrolyzer losses over time..
 
-st.divider()
+    It evaluates and displays the best metrics across all models (highlighted in green) for various performance indicators (R², MSE, MAE) for both training and test datasets.
 
-st.write('#### Gradient Boosting Model')
-display_metrics('Gradient Boosting', model_metrics, best_metrics)
-plot_predict_v_actual('Gradient Boosting', train_data,
-                      test_data, y_train, gb_y_train_pred, gb_y_test_pred)
+    It uses a tabbed interface with four tabs, each dedicated to a specific model: Random Forest, Gradient Boosting, XGBoost, and Prophet.
 
-st.divider()
+    For each model tab, it displays the model's performance metrics, shows how these metrics compare to the best metrics across all models and presents a plot comparing predicted vs. actual electrolyzer losses for both training and test data
 
-st.write('#### XGBoost Model')
-display_metrics('XGBoost', model_metrics, best_metrics)
-plot_predict_v_actual('XGBoost', train_data,
-                      test_data, y_train, gb_y_train_pred, gb_y_test_pred)
-
-st.divider()
-
-st.write('#### Prophet Model')
-display_metrics('Prophet', model_metrics, best_metrics)
-
-prophet_fig = go.Figure()
-
-prophet_fig.add_trace(go.Scatter(x=train_data['ds'], y=y_train,
-                                 mode='lines', name='Actual Electrolyzer Losses (Train)',
-                                 line=dict(color='blue')))
-
-prophet_fig.add_trace(go.Scatter(x=test_data['ds'], y=y_test,
-                                 mode='lines', name='Actual Electrolyzer Losses (Test)',
-                                 line=dict(color='green')))
-
-prophet_fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'],
-                                 mode='lines', name='Predicted Electrolyzer Losses',
-                                 line=dict(color='red')))
-
-prophet_fig.add_trace(go.Scatter(
-    x=forecast['ds'].tolist() + forecast['ds'].tolist()[::-1],
-    y=forecast['yhat_upper'].tolist() + forecast['yhat_lower'].tolist()[::-1],
-    fill='toself',
-    fillcolor='rgba(255,192,203,0.3)',
-    line=dict(color='rgba(255,192,203,0.3)'),
-    hoverinfo="skip",
-    showlegend=True,
-    name='Uncertainty Interval',
-))
-
-prophet_fig.update_layout(
-    title='Electrolyzer Losses Prediction with Prophet',
-    xaxis_title='Date',
-    yaxis_title='Electrolyzer Losses',
-    hovermode="x unified",
-    legend=dict(
-        orientation="h",
-        yanchor="bottom",
-        y=-0.2,
-        xanchor="center",
-        x=0.5
-    ),
-    xaxis=dict(
-        title=dict(
-            text="Date",
-            standoff=45
-        )
-    ),
+    The Prophet model tab includes an additional interactive Plotly chart that visualizes actual electrolyzer losses for training and test data, predicted electrolyzer losses and uncertainty intervals for the predictions.
+    """
 )
 
-prophet_fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='LightGrey')
-prophet_fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGrey')
+tab_titles = ["Random Forest", "Gradient Boosting", "XGBoost", "Prophet"]
+tabs = st.tabs(tab_titles)
 
-st.plotly_chart(prophet_fig, use_container_width=True)
-st.divider()
+with tabs[0]:
+    st.write('#### Random Forest Model')
+    display_metrics('Random Forest', model_metrics, best_metrics)
+    plot_predict_v_actual('Random Forest', train_data, test_data,
+                          y_train, rf_y_train_pred, rf_y_test_pred)
+
+
+with tabs[1]:
+    st.write('#### Gradient Boosting Model')
+    display_metrics('Gradient Boosting', model_metrics, best_metrics)
+    plot_predict_v_actual('Gradient Boosting', train_data,
+                          test_data, y_train, gb_y_train_pred, gb_y_test_pred)
+
+
+with tabs[2]:
+    st.write('#### XGBoost Model')
+    display_metrics('XGBoost', model_metrics, best_metrics)
+    plot_predict_v_actual('XGBoost', train_data,
+                          test_data, y_train, gb_y_train_pred, gb_y_test_pred)
+
+
+with tabs[3]:
+    st.write('#### Prophet Model')
+    display_metrics('Prophet', model_metrics, best_metrics)
+
+    prophet_fig = go.Figure()
+
+    prophet_fig.add_trace(go.Scatter(x=train_data['ds'], y=y_train,
+                                     mode='lines', name='Actual Electrolyzer Losses (Train)',
+                                     line=dict(color='blue')))
+
+    prophet_fig.add_trace(go.Scatter(x=test_data['ds'], y=y_test,
+                                     mode='lines', name='Actual Electrolyzer Losses (Test)',
+                                     line=dict(color='green')))
+
+    prophet_fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'],
+                                     mode='lines', name='Predicted Electrolyzer Losses',
+                                     line=dict(color='red')))
+
+    prophet_fig.add_trace(go.Scatter(
+        x=forecast['ds'].tolist() + forecast['ds'].tolist()[::-1],
+        y=forecast['yhat_upper'].tolist(
+        ) + forecast['yhat_lower'].tolist()[::-1],
+        fill='toself',
+        fillcolor='rgba(255,192,203,0.3)',
+        line=dict(color='rgba(255,192,203,0.3)'),
+        hoverinfo="skip",
+        showlegend=True,
+        name='Uncertainty Interval',
+    ))
+
+    prophet_fig.update_layout(
+        title='Electrolyzer Losses Prediction with Prophet',
+        xaxis_title='Date',
+        yaxis_title='Electrolyzer Losses',
+        hovermode="x unified",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.2,
+            xanchor="center",
+            x=0.5
+        ),
+        xaxis=dict(
+            title=dict(
+                text="Date",
+                standoff=45
+            )
+        ),
+    )
+
+    prophet_fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='LightGrey')
+    prophet_fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGrey')
+
+    st.plotly_chart(prophet_fig, use_container_width=True)
